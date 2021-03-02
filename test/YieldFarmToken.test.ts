@@ -1,6 +1,5 @@
 import { ethers } from "hardhat";
 import { BigNumber, Contract, Signer } from "ethers";
-// import { BigNumber, Signer } from 'ethers';
 import * as helpers from "./helpers/helpers";
 import * as deploy from "./helpers/deploy";
 // import * as time from './helpers/time';
@@ -26,9 +25,7 @@ describe("YieldFarm Token Pool", function () {
     let snapshotId: any;
 
     before(async () => {
-        const signers = await ethers.getSigners();
-        owner = signers[0];
-        user = signers[1];
+        [owner, user] = await ethers.getSigners();
         userAddr = await user.getAddress();
 
         poolToken = (await deploy.deployContract("ERC20Mock")) as ERC20Mock;
@@ -67,11 +64,12 @@ describe("YieldFarm Token Pool", function () {
         });
 
         it("Get epoch PoolSize and distribute tokens", async function () {
-            await depositToken(amount);
+            await depositToken(amount, user);
             await moveAtEpoch(6);
             const totalAmount = amount;
-console.log("log", totalAmount, await yieldFarm.getPoolSize(1), amount)
-            expect(await yieldFarm.getPoolSize(1)).to.equal(totalAmount);
+            const aa = await yieldFarm.getPoolSize(1);
+            console.log("log", totalAmount, await yieldFarm.getPoolSize(1), amount, aa);
+            expect(aa).to.equal(totalAmount);
             // expect(await yieldFarm.getEpochStake(userAddr, 1)).to.equal(totalAmount);
             // expect(await rewardToken.allowance(communityVaultAddr, yieldFarm.address)).to.equal(distributedAmount);
             // expect(await yieldFarm.getCurrentEpoch()).to.equal(2); // epoch on yield is staking - numberOfDelayedEpochs

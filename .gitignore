@@ -9,7 +9,8 @@ coverage
 coverage.json
 
 # Local settings
-config.js
+config.ts
 
 # IDE settings
 .idea/
+typechain/
