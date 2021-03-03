@@ -1,9 +1,9 @@
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish, Signer } from "ethers";
-import { getCurrentUnix, moveAtEpoch, setNextBlockTimestamp, tenPow18 } from "./helpers/helpers";
+import { moveAtEpoch, setNextBlockTimestamp, tenPow18 } from "./helpers/helpers";
 import { deployContract } from "./helpers/deploy";
 import { expect } from "chai";
-import { CommunityVault, ERC20Mock, Staking, YieldFarmToken } from "../typechain";
+import { ERC20Mock, Staking } from "../typechain";
 
 describe("Staking", function () {
     let staking: Staking;
@@ -100,7 +100,7 @@ describe("Staking", function () {
 
             // move forward to epoch 1
             // do one more deposit then check that the user balance is still correct
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
 
             await staking.connect(user).deposit(erc20Mock.address, amount);
 
@@ -118,7 +118,7 @@ describe("Staking", function () {
             });
 
             it("Deposit at random points inside an epoch sets the correct effective balance", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 const NUM_CHECKS = 5;
@@ -143,7 +143,7 @@ describe("Staking", function () {
             });
 
             it("deposit in middle of epoch 1", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 await setNextBlockTimestamp(getEpochStart(1) + Math.floor(epochDuration / 2));
@@ -161,13 +161,13 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, deposit epoch 4", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 await setNextBlockTimestamp(getEpochStart(1) + Math.floor(epochDuration / 2));
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,4);
+                await moveAtEpoch(epoch1Start, epochDuration, 4);
                 await staking.manualEpochInit([erc20Mock.address], 3);
 
                 await setNextBlockTimestamp(getEpochStart(4) + Math.floor(epochDuration / 2));
@@ -188,12 +188,12 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, deposit epoch 2", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
                 await setNextBlockTimestamp(getEpochStart(1) + Math.floor(epochDuration / 2));
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,2);
+                await moveAtEpoch(epoch1Start, epochDuration, 2);
                 await setNextBlockTimestamp(getEpochStart(2) + Math.floor(epochDuration / 2));
 
                 expect(await getEpochUserBalance(userAddr, 2)).to.equal(amount);
@@ -212,12 +212,12 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, deposit epoch 5, deposit epoch 5", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
                 await setNextBlockTimestamp(getEpochStart(1) + Math.floor(epochDuration / 2));
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,5);
+                await moveAtEpoch(epoch1Start, epochDuration, 5);
                 await staking.manualEpochInit([erc20Mock.address], 3);
                 await staking.manualEpochInit([erc20Mock.address], 4);
 
@@ -290,12 +290,12 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, withdraw epoch 5", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,5);
+                await moveAtEpoch(epoch1Start, epochDuration, 5);
                 await staking.manualEpochInit([erc20Mock.address], 3);
                 await staking.manualEpochInit([erc20Mock.address], 4);
 
@@ -309,12 +309,12 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, withdraw epoch 2", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,2);
+                await moveAtEpoch(epoch1Start, epochDuration, 2);
 
                 const ts = getEpochStart(1) + 24 * 60 * 60;
                 await setNextBlockTimestamp(ts);
@@ -326,12 +326,12 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, deposit epoch 5, withdraw epoch 5 half amount", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,5);
+                await moveAtEpoch(epoch1Start, epochDuration, 5);
                 await staking.manualEpochInit([erc20Mock.address], 3);
                 await staking.manualEpochInit([erc20Mock.address], 4);
 
@@ -367,12 +367,12 @@ describe("Staking", function () {
             });
 
             it("deposit epoch 1, deposit epoch 5, withdraw epoch 5 more than deposited", async function () {
-                await moveAtEpoch(epoch1Start, epochDuration,1);
+                await moveAtEpoch(epoch1Start, epochDuration, 1);
                 await staking.manualEpochInit([erc20Mock.address], 0);
 
                 await deposit(user, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,5);
+                await moveAtEpoch(epoch1Start, epochDuration, 5);
                 await staking.manualEpochInit([erc20Mock.address], 3);
                 await staking.manualEpochInit([erc20Mock.address], 4);
 
@@ -412,19 +412,19 @@ describe("Staking", function () {
             expect(await getEpochPoolSize(1)).to.be.equal(amount.toString());
             expect(await getEpochUserBalance(userAddr, 1)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await deposit(user, amount);
 
             expect(await getEpochPoolSize(2)).to.be.equal(amount.mul(2).toString());
             expect(await getEpochUserBalance(userAddr, 2)).to.be.equal(amount.mul(2).toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,2);
+            await moveAtEpoch(epoch1Start, epochDuration, 2);
             await deposit(user, amount);
 
             expect(await getEpochPoolSize(3)).to.be.equal(amount.mul(3).toString());
             expect(await getEpochUserBalance(userAddr, 3)).to.be.equal(amount.mul(3).toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,3);
+            await moveAtEpoch(epoch1Start, epochDuration, 3);
             await withdraw(user, amount.mul(3));
 
             expect(await getEpochPoolSize(4)).to.be.equal("0");
@@ -439,7 +439,7 @@ describe("Staking", function () {
             expect(await getEpochPoolSize(1)).to.be.equal(amount.toString());
             expect(await getEpochUserBalance(userAddr, 1)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,3);
+            await moveAtEpoch(epoch1Start, epochDuration, 3);
             await staking.manualEpochInit([erc20Mock.address], 2);
 
             await withdraw(user, amount);
@@ -462,7 +462,7 @@ describe("Staking", function () {
         });
 
         it("deposit in epoch 3, withdraw in epoch 3", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,3);
+            await moveAtEpoch(epoch1Start, epochDuration, 3);
             await staking.manualEpochInit([erc20Mock.address], 0);
             await staking.manualEpochInit([erc20Mock.address], 1);
             await staking.manualEpochInit([erc20Mock.address], 2);
@@ -479,7 +479,7 @@ describe("Staking", function () {
         });
 
         it("deposit in epoch 2, withdraw in epoch 3", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,2);
+            await moveAtEpoch(epoch1Start, epochDuration, 2);
             await staking.manualEpochInit([erc20Mock.address], 0);
             await staking.manualEpochInit([erc20Mock.address], 1);
 
@@ -488,7 +488,7 @@ describe("Staking", function () {
             expect(await getEpochPoolSize(3)).to.be.equal(amount.toString());
             expect(await getEpochUserBalance(userAddr, 3)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,3);
+            await moveAtEpoch(epoch1Start, epochDuration, 3);
             await withdraw(user, amount);
 
             expect(await getEpochPoolSize(4)).to.be.equal("0");
@@ -514,7 +514,7 @@ describe("Staking", function () {
             expect(await getEpochUserBalance(ownerAddr, 1)).to.be.equal(amount.toString());
             expect(await getEpochUserBalance(userAddr, 1)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await withdraw(user, amount);
 
             expect(await getEpochPoolSize(1)).to.be.equal(amount.toString());
@@ -531,7 +531,7 @@ describe("Staking", function () {
             expect(await getEpochUserBalance(ownerAddr, 1)).to.be.equal(amount.toString());
             expect(await getEpochUserBalance(userAddr, 1)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,2);
+            await moveAtEpoch(epoch1Start, epochDuration, 2);
             await withdraw(user, amount);
 
             expect(await getEpochPoolSize(1)).to.be.equal(amount.mul(2).toString());
@@ -544,7 +544,7 @@ describe("Staking", function () {
         });
 
         it("multiple deposits in same epoch", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await staking.manualEpochInit([erc20Mock.address], 0);
 
             await deposit(user, amount);
@@ -555,7 +555,7 @@ describe("Staking", function () {
         });
 
         it("deposit epoch 2, deposit epoch 3, withdraw epoch 3", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,2);
+            await moveAtEpoch(epoch1Start, epochDuration, 2);
 
             await staking.manualEpochInit([erc20Mock.address], 0);
             await staking.manualEpochInit([erc20Mock.address], 1);
@@ -565,7 +565,7 @@ describe("Staking", function () {
             expect(await getEpochUserBalance(userAddr, 3)).to.be.equal(amount.toString());
             expect(await getEpochPoolSize(3)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,3);
+            await moveAtEpoch(epoch1Start, epochDuration, 3);
             await deposit(user, amount);
             expect(await getEpochUserBalance(userAddr, 4)).to.be.equal(amount.mul(2).toString());
             expect(await getEpochPoolSize(4)).to.be.equal(amount.mul(2).toString());
@@ -576,14 +576,14 @@ describe("Staking", function () {
         });
 
         it("deposit epoch 1, deposit epoch 3, withdraw epoch 3", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await staking.manualEpochInit([erc20Mock.address], 0);
 
             await deposit(user, amount);
             expect(await getEpochUserBalance(userAddr, 2)).to.be.equal(amount.toString());
             expect(await getEpochPoolSize(2)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,3);
+            await moveAtEpoch(epoch1Start, epochDuration, 3);
             await deposit(user, amount);
             expect(await getEpochUserBalance(userAddr, 4)).to.be.equal(amount.mul(2).toString());
             expect(await getEpochPoolSize(4)).to.be.equal(amount.mul(2).toString());
@@ -595,19 +595,19 @@ describe("Staking", function () {
         });
 
         it("deposit epoch 1, deposit epoch 4, deposit epoch 5, withdraw epoch 5", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await staking.manualEpochInit([erc20Mock.address], 0);
 
             await deposit(user, amount);
             expect(await getEpochUserBalance(userAddr, 2)).to.be.equal(amount.toString());
             expect(await getEpochPoolSize(2)).to.be.equal(amount.toString());
 
-            await moveAtEpoch(epoch1Start, epochDuration,4);
+            await moveAtEpoch(epoch1Start, epochDuration, 4);
             await staking.manualEpochInit([erc20Mock.address], 3);
 
             await deposit(user, amount);
 
-            await moveAtEpoch(epoch1Start, epochDuration,5);
+            await moveAtEpoch(epoch1Start, epochDuration, 5);
             await deposit(user, amount);
             expect(await getEpochUserBalance(userAddr, 2)).to.be.equal(amount.toString());
             expect(await getEpochUserBalance(userAddr, 3)).to.be.equal(amount.toString());
@@ -629,13 +629,13 @@ describe("Staking", function () {
         });
 
         it("Reverts if there's a gap", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,2);
+            await moveAtEpoch(epoch1Start, epochDuration, 2);
 
             await expect(deposit(user, amount)).to.be.revertedWith("Staking: previous epoch not initialized");
         });
 
         it("Returns pool size when epoch is initialized", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await staking.manualEpochInit([erc20Mock.address], 0);
             await deposit(user, amount);
 
@@ -651,7 +651,7 @@ describe("Staking", function () {
         });
 
         it("Returns correct balance where there was an action at some point", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await staking.manualEpochInit([erc20Mock.address], 0);
             await deposit(user, amount);
 
@@ -663,7 +663,7 @@ describe("Staking", function () {
         it("Returns correct value", async function () {
             // epoch size is 1 week = 604800 seconds
 
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
 
             // after 100 seconds, multiplier should be 0.9998
             await moveAtTimestamp(epoch1Start + 100);
@@ -714,7 +714,7 @@ describe("Staking", function () {
         });
 
         it("Reverts if user has no balance", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,11);
+            await moveAtEpoch(epoch1Start, epochDuration, 11);
 
             await expect(
                 staking.connect(user).emergencyWithdraw(erc20Mock.address)
@@ -734,14 +734,14 @@ describe("Staking", function () {
                 await deposit(user, amount);
                 await deposit(owner, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,5);
+                await moveAtEpoch(epoch1Start, epochDuration, 5);
                 await staking.manualEpochInit([erc20Mock.address], 2);
                 await staking.manualEpochInit([erc20Mock.address], 3);
                 await staking.manualEpochInit([erc20Mock.address], 4);
 
                 await withdraw(owner, amount);
 
-                await moveAtEpoch(epoch1Start, epochDuration,11);
+                await moveAtEpoch(epoch1Start, epochDuration, 11);
 
                 await expect(
                     staking.connect(user).emergencyWithdraw(erc20Mock.address)
@@ -751,7 +751,7 @@ describe("Staking", function () {
 
         it("Works if more than 10 epochs passed with no withdraw", async function () {
             await deposit(user, amount);
-            await moveAtEpoch(epoch1Start, epochDuration,11);
+            await moveAtEpoch(epoch1Start, epochDuration, 11);
 
             await expect(
                 staking.connect(user).emergencyWithdraw(erc20Mock.address)
@@ -783,7 +783,7 @@ describe("Staking", function () {
         });
 
         it("ManualEpochInit emits ManualEpochInit event", async function () {
-            await moveAtEpoch(epoch1Start, epochDuration,1);
+            await moveAtEpoch(epoch1Start, epochDuration, 1);
             await expect(staking.manualEpochInit([erc20Mock.address], 0))
                 .to.emit(staking, "ManualEpochInit");
         });
@@ -791,7 +791,7 @@ describe("Staking", function () {
         it("EmergencyWithdraw emits EmergencyWithdraw event", async function () {
             await deposit(user, amount);
 
-            await moveAtEpoch(epoch1Start, epochDuration,20);
+            await moveAtEpoch(epoch1Start, epochDuration, 20);
 
             await expect(staking.connect(user).emergencyWithdraw(erc20Mock.address))
                 .to.emit(staking, "EmergencyWithdraw");
@@ -853,32 +853,9 @@ describe("Staking", function () {
         return (await staking.getEpochUserBalance(addr, erc20Mock.address, epochId)).toString();
     }
 
-    // eslint-disable-next-line no-unused-vars
-    async function getCurrentEpoch() {
-        return (await staking.getCurrentEpoch()).toString();
-    }
-
-    // eslint-disable-next-line no-unused-vars
-    async function currentBlockNumber() {
-        return await ethers.provider.getBlockNumber();
-    }
-
     function getCurrentUnix() {
         return Math.floor(Date.now() / 1000);
     }
-
-    // async function setNextBlockTimestamp(timestamp: number) {
-    //     const block = await ethers.provider.send("eth_getBlockByNumber", ["latest", false]);
-    //     const currentTs = parseInt(block.timestamp);
-    //     const diff = timestamp - currentTs;
-    //     await ethers.provider.send("evm_increaseTime", [diff]);
-    // }
-
-    // async function moveAtEpoch(epoch1Start, epochDuration,epoch: number) {
-    //     // await setNextBlockTimestamp(epoch1Start + epochDuration * (epoch - 1));
-    //     await setNextBlockTimestamp(epoch1Start + epochDuration * (epoch-1));
-    //     await ethers.provider.send("evm_mine", []);
-    // }
 
     async function moveAtTimestamp(timestamp: number) {
         await setNextBlockTimestamp(timestamp);
