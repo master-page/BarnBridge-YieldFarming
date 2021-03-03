@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { BigNumber, Signer } from "ethers";
-import * as helpers from "./helpers/helpers";
+import { moveAtEpoch, tenPow18 } from "./helpers/helpers";
 import * as deploy from "./helpers/deploy";
 // import * as time from './helpers/time';
 import { expect } from "chai";
@@ -8,6 +8,7 @@ import { CommunityVault, ERC20Mock, Staking, YieldFarmToken } from "../typechain
 
 describe("YieldFarm Token Pool", function () {
     const epochDuration = 1000;
+    const epochStart = Math.floor(Date.now() / epochDuration) + epochDuration;
     const numberOfEpochs = 12;
     const epochsDelayedFromStakingContract = 4;
 
@@ -19,8 +20,8 @@ describe("YieldFarm Token Pool", function () {
     let owner: Signer, user: Signer;
     let userAddr: string;
 
-    const amount = BigNumber.from(100).mul(helpers.tenPow18) as BigNumber;
-    const distributedAmount: BigNumber = BigNumber.from(60000).mul(helpers.tenPow18);
+    const amount = BigNumber.from(100).mul(tenPow18) as BigNumber;
+    const distributedAmount: BigNumber = BigNumber.from(60000).mul(tenPow18);
 
     let snapshotId: any;
 
@@ -31,7 +32,7 @@ describe("YieldFarm Token Pool", function () {
         poolToken = (await deploy.deployContract("ERC20Mock")) as ERC20Mock;
         rewardToken = (await deploy.deployContract("ERC20Mock")) as ERC20Mock;
         communityVault = (await deploy.deployContract("CommunityVault", [rewardToken.address])) as CommunityVault;
-        staking = (await deploy.deployContract("Staking", [Math.floor(Date.now() / 1000) + 1000, epochDuration])) as Staking;
+        staking = (await deploy.deployContract("Staking", [epochStart, epochDuration])) as Staking;
 
         yieldFarm = (await deploy.deployContract("YieldFarmToken", [
             poolToken.address,
@@ -65,7 +66,7 @@ describe("YieldFarm Token Pool", function () {
 
         it("Get epoch PoolSize and distribute tokens", async function () {
             await depositToken(amount);
-            await moveAtEpoch(6);
+            await moveAtEpoch(epochStart, epochDuration, 6);
             const totalAmount: BigNumber = amount;
             expect(await yieldFarm.getPoolSize(1)).to.equal(totalAmount);
             expect(await yieldFarm.getEpochStake(userAddr, 1)).to.equal(totalAmount);
@@ -82,7 +83,7 @@ describe("YieldFarm Token Pool", function () {
             await depositToken(amount);
             const totalAmount = amount;
             // initialize epochs meanwhile
-            await moveAtEpoch(12);
+            await moveAtEpoch(epochStart, epochDuration,12);
             expect(await yieldFarm.getPoolSize(1)).to.equal(amount);
 
             expect(await yieldFarm.lastInitializedEpoch()).to.equal(0); // no epoch initialized
@@ -104,7 +105,7 @@ describe("YieldFarm Token Pool", function () {
         });
         it("Have nothing to harvest", async function () {
             await depositToken(amount);
-            await moveAtEpoch(10);
+            await moveAtEpoch(epochStart, epochDuration,10);
             expect(await yieldFarm.getPoolSize(1)).to.equal(amount);
             await yieldFarm.connect(owner).harvest(1);
             expect(await rewardToken.balanceOf(await owner.getAddress())).to.equal(0);
@@ -114,7 +115,7 @@ describe("YieldFarm Token Pool", function () {
         it("harvest maximum 12 epochs", async function () {
             await depositToken(amount);
             const totalAmount = amount;
-            await moveAtEpoch(300);
+            await moveAtEpoch(epochStart, epochDuration,300);
 
             expect(await yieldFarm.getPoolSize(1)).to.equal(totalAmount);
             await (await yieldFarm.connect(user).massHarvest()).wait();
@@ -122,16 +123,16 @@ describe("YieldFarm Token Pool", function () {
         });
 
         it("gives epochid = 0 for previous epochs", async function () {
-            await moveAtEpoch(-2);
+            await moveAtEpoch(epochStart, epochDuration,-2);
             expect(await yieldFarm.getCurrentEpoch()).to.equal(0);
         });
         it("it should return 0 if no deposit in an epoch", async function () {
-            await moveAtEpoch(6);
+            await moveAtEpoch(epochStart, epochDuration,6);
             await yieldFarm.connect(user).harvest(1);
             expect(await rewardToken.balanceOf(await user.getAddress())).to.equal(0);
         });
         it("it should be epoch1 when staking epoch is 5", async function () {
-            await moveAtEpoch(5);
+            await moveAtEpoch(epochStart, epochDuration,5);
             expect(await staking.getCurrentEpoch()).to.equal(5);
             expect(await yieldFarm.getCurrentEpoch()).to.equal(1);
         });
@@ -140,7 +141,7 @@ describe("YieldFarm Token Pool", function () {
     describe("Events", function () {
         it("Harvest emits Harvest", async function () {
             await depositToken(amount);
-            await moveAtEpoch(9);
+            await moveAtEpoch(epochStart, epochDuration,9);
 
             await expect(yieldFarm.connect(user).harvest(1))
                 .to.emit(yieldFarm, "Harvest");
@@ -148,33 +149,17 @@ describe("YieldFarm Token Pool", function () {
 
         it("MassHarvest emits MassHarvest", async function () {
             await depositToken(amount);
-            await moveAtEpoch(9);
+            await moveAtEpoch(epochStart, epochDuration,9);
 
             await expect(yieldFarm.connect(user).massHarvest())
                 .to.emit(yieldFarm, "MassHarvest");
         });
     });
 
-    function getCurrentUnix() {
-        return Math.floor(Date.now() / 1000);
-    }
-
-    async function setNextBlockTimestamp(timestamp) {
-        const block = await ethers.provider.send("eth_getBlockByNumber", ["latest", false]);
-        const currentTs = block.timestamp;
-        const diff = timestamp - currentTs;
-        await ethers.provider.send("evm_increaseTime", [diff]);
-    }
-
-    async function moveAtEpoch(epoch) {
-        await setNextBlockTimestamp(getCurrentUnix() + epochDuration * epoch);
-        await ethers.provider.send("evm_mine", []);
-    }
-
-    async function depositToken(x, u = user) {
-        const ua = await u.getAddress();
-        await poolToken.mint(ua, x);
-        await poolToken.connect(u).approve(staking.address, x);
-        return await staking.connect(u).deposit(poolToken.address, x);
+    async function depositToken(amount: BigNumber, account = user) {
+        const addr = await account.getAddress();
+        await poolToken.mint(addr, amount);
+        await poolToken.connect(account).approve(staking.address, amount);
+        return await staking.connect(account).deposit(poolToken.address, amount);
     }
 });
