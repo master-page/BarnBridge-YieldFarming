@@ -8,10 +8,10 @@ export const tenPow18 = BigNumber.from(10).pow(18);
 export async function getLatestBlock(): Promise<any> {
     return await ethers.provider.send("eth_getBlockByNumber", ["latest", false]);
 }
-
-export async function getLatestBlockTimestamp(): Promise<number> {
-    return parseInt((await getLatestBlock()).timestamp);
-}
+//
+// export async function getLatestBlockTimestamp(): Promise<number> {
+//     return parseInt((await getLatestBlock()).timestamp);
+// }
 
 export async function setNextBlockTimestamp(timestamp: number): Promise<void> {
     const block = await ethers.provider.send("eth_getBlockByNumber", ["latest", false]);
@@ -25,7 +25,7 @@ export function getCurrentUnix() {
 }
 
 export async function moveAtEpoch(start: number, duration: number, epoch: number) {
-    await setNextBlockTimestamp(getCurrentUnix() + duration * epoch);
+    await setNextBlockTimestamp(start + duration * (epoch-1));
     await ethers.provider.send("evm_mine", []);
 }
 
@@ -38,7 +38,7 @@ export async function getCurrentEpoch(start: number, duration: number): Promise<
 
     return Math.floor((currentBlockTs - start) / duration) + 1;
 }
-
-export async function contractAt(name: string, address: string): Promise<Contract> {
-    return await ethers.getContractAt(name, address);
-}
+//
+// export async function contractAt(name: string, address: string): Promise<Contract> {
+//     return await ethers.getContractAt(name, address);
+// }
