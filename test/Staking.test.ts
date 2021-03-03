@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { BigNumber, BigNumberish, Signer } from "ethers";
-import { moveAtEpoch, setNextBlockTimestamp, tenPow18 } from "./helpers/helpers";
+import { moveAtEpoch, setNextBlockTimestamp, tenPow18, getCurrentUnix } from "./helpers/helpers";
 import { deployContract } from "./helpers/deploy";
 import { expect } from "chai";
 import { ERC20Mock, Staking } from "../typechain";
@@ -851,10 +851,6 @@ describe("Staking", function () {
 
     async function getEpochUserBalance(addr: string, epochId: BigNumberish) {
         return (await staking.getEpochUserBalance(addr, erc20Mock.address, epochId)).toString();
-    }
-
-    function getCurrentUnix() {
-        return Math.floor(Date.now() / 1000);
     }
 
     async function moveAtTimestamp(timestamp: number) {
